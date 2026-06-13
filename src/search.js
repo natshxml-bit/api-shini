@@ -1,3 +1,4 @@
+// File: src/search.js
 const express = require('express');
 const axios = require('axios');
 const router = express.Router();
@@ -12,66 +13,34 @@ const shinigamiHeaders = {
 
 router.get('/', async (req, res) => {
     try {
-        // 🔥 TRIK SAKTI: Kita saring/hapus parameter yang nilainya kosong
-        // Biar API Shinigami nggak error/nge-reset ke page 1
-        const cleanQuery = {};
-        for (const key in req.query) {
-            if (req.query[key] !== '' && req.query[key] !== null && req.query[key] !== undefined) {
-                cleanQuery[key] = req.query[key];
+        // Gabungin semua query dari frontend
+        const query = req.query;
+        
+        // Setup parameter yang mirip banget sama web asli biar disukai sama API-nya
+        const params = new URLSearchParams({
+            page: query.page || '1',
+            page_size: '24', // Wajib diset biar konsisten
+            genre_include_mode: 'or',
+            genre_exclude_mode: 'or',
+            ...query // Timpa dengan parameter asli dari frontend (genre, status, order, dll)
+        });
+
+        // Hapus key yang nilainya kosong/undefined biar nggak dikirim
+        for (let [key, value] of Array.from(params.entries())) {
+            if (!value || value === 'undefined' || value === 'null' || value === '') {
+                params.delete(key);
             }
         }
 
-        // 🔥 FIX 1: Mapping parameter 'order' ke 'sort' (API Shinigami pakai 'sort', bukan 'order')
-        if (cleanQuery.order) {
-            // API Shinigami pakai 'sort' untuk pengurutan
-            // popular = default, latest = updated_at, title = title
-            cleanQuery.sort = cleanQuery.order;
-            delete cleanQuery.order;
-        }
-
-        // 🔥 FIX 2: Mapping status string ke angka yang API Shinigami ngerti
-        if (cleanQuery.status === 'ongoing') {
-            cleanQuery.status = '1';
-        } else if (cleanQuery.status === 'completed') {
-            cleanQuery.status = '2';
-        }
-
-        // 🔥 FIX 3: Pastikan page selalu ada dan valid
-        if (!cleanQuery.page || cleanQuery.page < 1) {
-            cleanQuery.page = '1';
-        }
-
-        // Ubah jadi format URL (contoh: page=2&genre=action&sort=title)
-        const queryString = new URLSearchParams(cleanQuery).toString();
+        const targetUrl = `${BASE_API}/manga/list?${params.toString()}`;
+        console.log("Fetching URL:", targetUrl);
         
-        // Tembak ke API list Shinigami
-        const targetUrl = `${BASE_API}/manga/list?${queryString}`;
-        console.log("[SHINIGAMI API] Manggil:", targetUrl); // Log lebih informatif
-        console.log("[SHINIGAMI API] Parameter bersih:", cleanQuery);
-        
-        const response = await axios.get(targetUrl, { 
-            headers: shinigamiHeaders,
-            timeout: 10000 // Timeout 10 detik biar nggak hanging
-        });
-        
-        // Log response info untuk debugging
-        console.log("[SHINIGAMI API] Response status:", response.status);
-        console.log("[SHINIGAMI API] Data count:", 
-            Array.isArray(response.data) ? response.data.length : 
-            response.data?.data?.length || response.data?.results?.length || 'unknown'
-        );
+        const response = await axios.get(targetUrl, { headers: shinigamiHeaders });
         
         res.json(response.data);
     } catch (error) {
-        console.error("[SHINIGAMI API] ERROR:", error.message);
-        if (error.response) {
-            console.error("[SHINIGAMI API] Status:", error.response.status);
-            console.error("[SHINIGAMI API] Data:", error.response.data);
-        }
-        res.status(500).json({ 
-            error: "Gagal ngambil data pencarian/filter",
-            message: error.message 
-        });
+        console.error("Backend Error:", error.message);
+        res.status(500).json({ error: "Gagal ngambil data pencarian/filter" });
     }
 });
 
