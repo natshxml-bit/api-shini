@@ -13,12 +13,21 @@ const shinigamiHeaders = {
 
 router.get('/', async (req, res) => {
     try {
-        // Trik Sakti: Kita tangkep SEMUA parameter yang dikirim frontend (judul, genre, page, dll)
-        // Terus kita ubah otomatis jadi format URL
-        const queryString = new URLSearchParams(req.query).toString();
+        // 🔥 TRIK SAKTI: Kita saring/hapus parameter yang nilainya kosong
+        // Biar API Shinigami nggak error/nge-reset ke page 1
+        const cleanQuery = {};
+        for (const key in req.query) {
+            if (req.query[key] !== '' && req.query[key] !== null) {
+                cleanQuery[key] = req.query[key];
+            }
+        }
+
+        // Ubah jadi format URL (contoh: page=2&genre=action)
+        const queryString = new URLSearchParams(cleanQuery).toString();
         
-        // Tembak langsung ke API list Shinigami bawaan query-nya
+        // Tembak ke API list Shinigami
         const targetUrl = `${BASE_API}/manga/list?${queryString}`;
+        console.log("Manggil API:", targetUrl); // Biar gampang ngecek log di Vercel nanti
         
         const response = await axios.get(targetUrl, { headers: shinigamiHeaders });
         
