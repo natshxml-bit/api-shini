@@ -1,4 +1,3 @@
-// File: src/search.js
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -12,7 +11,6 @@ const headers = {
     'Referer': 'https://www.manhwaindo.my/'
 };
 
-// Helper: Anti-lazyload gambar
 function getThumb($, el) {
     const noscript = $(el).find('noscript').html();
     if (noscript) {
@@ -23,14 +21,12 @@ function getThumb($, el) {
     return img.attr('data-src') || img.attr('src') || '';
 }
 
-// Helper: Ekstrak slug
 function getSlug(url) {
     if (!url) return '';
     const parts = url.split('/series/');
     if (parts.length > 1) {
         return parts[1].replace(/\//g, '');
     }
-    // Handle URL pencarian judul yang nggak pakai /series/
     const parts2 = url.split('.my/');
     if (parts2.length > 1) {
          return parts2[1].replace(/\//g, '');
@@ -38,7 +34,6 @@ function getSlug(url) {
     return '';
 }
 
-// 🔥 KAMUS GENRE MANHWAINDO
 const genreMap = {
     "action": "3", "adventure": "12", "comedy": "5", "crime": "1764", "demons": "217", 
     "drama": "18", "ecchi": "22", "fantasy": "13", "game": "14", "gender bender": "112", 
@@ -55,40 +50,9 @@ const genreMap = {
 
 router.get('/', async (req, res) => {
     try {
-<<<<<<< HEAD
-        // Gabungin semua query dari frontend
-        const query = req.query;
-        
-        // Setup parameter yang mirip banget sama web asli biar disukai sama API-nya
-        const params = new URLSearchParams({
-            page: query.page || '1',
-            page_size: '24', // Wajib diset biar konsisten
-            genre_include_mode: 'or',
-            genre_exclude_mode: 'or',
-            ...query // Timpa dengan parameter asli dari frontend (genre, status, order, dll)
-        });
-
-        // Hapus key yang nilainya kosong/undefined biar nggak dikirim
-        for (let [key, value] of Array.from(params.entries())) {
-            if (!value || value === 'undefined' || value === 'null' || value === '') {
-                params.delete(key);
-            }
-        }
-
-        const targetUrl = `${BASE_API}/manga/list?${params.toString()}`;
-        console.log("Fetching URL:", targetUrl);
-        
-        const response = await axios.get(targetUrl, { headers: shinigamiHeaders });
-        
-        res.json(response.data);
-    } catch (error) {
-        console.error("Backend Error:", error.message);
-        res.status(500).json({ error: "Gagal ngambil data pencarian/filter" });
-=======
         const params = new URLSearchParams();
         const q = req.query;
 
-        // 1. Pencarian Kata Kunci (Misal cari: Lookism)
         if (q.q) {
             params.set('s', q.q);
             var targetUrl = `https://www.manhwaindo.my/?${params.toString()}`;
@@ -96,22 +60,18 @@ router.get('/', async (req, res) => {
                 targetUrl = `https://www.manhwaindo.my/page/${q.page}/?${params.toString()}`;
             }
         } else {
-            // 2. Filter Lanjutan (Genre, Tipe, Urutan)
-            
-            // Order
             const order = q.order || q.sort;
             if (order) {
                 if (order === 'latest' || order === 'update') params.set('order', 'update');
                 else if (order === 'popular') params.set('order', 'popular');
                 else if (order === 'a-z' || order === 'title') params.set('order', 'title');
                 else if (order === 'z-a' || order === 'titlereverse') params.set('order', 'titlereverse');
-                else if (order === 'added') params.set('order', 'latest'); // Added = latest upload
+                else if (order === 'added') params.set('order', 'latest');
                 else params.set('order', order);
             } else {
                 params.set('order', 'update');
             }
 
-            // Status 
             if (q.status) {
                 const st = q.status.toLowerCase();
                 if (st === '1' || st === 'ongoing') params.set('status', 'ongoing');
@@ -119,11 +79,9 @@ router.get('/', async (req, res) => {
                 else if (st === 'hiatus') params.set('status', 'hiatus');
             }
 
-            // Type
             const type = q.type || q.format; 
             if (type) params.set('type', type.toLowerCase());
 
-            // Genre Mapping
             if (q.genre) {
                 const genreQuery = q.genre.toLowerCase();
                 const genreId = genreMap[genreQuery];
@@ -132,7 +90,6 @@ router.get('/', async (req, res) => {
                 }
             }
 
-            // Pagination
             var targetUrl = `${BASE_URL}?${params.toString()}`;
             if (q.page && q.page > 1) {
                 targetUrl = `${BASE_URL}page/${q.page}/?${params.toString()}`;
@@ -178,7 +135,6 @@ router.get('/', async (req, res) => {
             }
         });
 
-        // Cache hasil pencarian 1 menit
         res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
         
         res.json({
@@ -193,7 +149,6 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error("Error Search Proxy:", error.message);
         res.status(500).json({ error: "Gagal memuat data pencarian dari ManhwaIndo" });
->>>>>>> 1b2bda5 (Update API ke ManhwaIndo)
     }
 });
 
