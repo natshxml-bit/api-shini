@@ -85,18 +85,24 @@ async function scrapeDetail(slug) {
             const rating = getRating($, infoBox);
 
             // 2. Ambil Metadata
-            let status = 'Unknown', type = 'Manga', author = 'Unknown', artist = 'Unknown', released = 'Unknown', updated = 'Unknown';
+            let status = 'Unknown', type = 'Manga', author = 'Unknown', artist = 'Unknown', 
+                released = 'Unknown', updated = 'Unknown', serialization = 'Unknown', 
+                postedBy = 'Unknown', postedOn = 'Unknown', views = 'Unknown';
 
             infoBox.find('.tsinfo .imptdt').each((i, el) => {
                 const text = $(el).text().trim().toLowerCase();
-                const val = $(el).find('i').text().trim() || $(el).find('a').text().trim();
+                const val = $(el).find('i').text().trim() || $(el).find('a').text().trim() || $(el).contents().last().text().trim();
 
                 if (text.includes('status')) status = val;
                 else if (text.includes('type')) type = val;
                 else if (text.includes('author')) author = val;
                 else if (text.includes('artist')) artist = val;
                 else if (text.includes('released')) released = val;
-                else if (text.includes('updated')) updated = $(el).find('time').text().trim() || val;
+                else if (text.includes('updated on')) updated = $(el).find('time').text().trim() || val;
+                else if (text.includes('serialization')) serialization = val;
+                else if (text.includes('posted by')) postedBy = val;
+                else if (text.includes('posted on')) postedOn = $(el).find('time').text().trim() || val;
+                else if (text.includes('views')) views = val;
             });
 
             // 3. Ambil Genre & Sinopsis
@@ -106,7 +112,7 @@ async function scrapeDetail(slug) {
 
             // 4. Ambil Daftar Chapter
             const chapters = [];
-            $('#chapterlist ul li').each((i, el) => {
+            $('.eplister ul li, #chapterlist ul li').each((i, el) => {
                 const chBox = $(el).find('.eph-num a');
                 const chNumText = chBox.find('.chapternum').text().trim() || $(el).attr('data-num');
                 const chDate = chBox.find('.chapterdate').text().trim();
@@ -146,6 +152,10 @@ async function scrapeDetail(slug) {
                     artist,
                     release_year: released,
                     updated_at: updated,
+                    serialization,
+                    posted_by: postedBy,
+                    posted_on: postedOn,
+                    views,
                     genres,
                     synopsis,
                     total_chapters: chapters.length,
