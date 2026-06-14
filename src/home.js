@@ -16,6 +16,7 @@ const headers = {
     'Sec-Fetch-Dest': 'document',
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-User': '?1',
     'Cache-Control': 'max-age=0'
 };
 
